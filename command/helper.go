@@ -58,11 +58,13 @@ var TVChannelMap = map[string]string{
 var (
 	now              time.Time
 	defaultStartTime string
+	defaultPrefix    string
 )
 
 func init() {
 	now = time.Now().Add(10 * time.Second)
 	defaultStartTime = now.Format(AtCmdFormat)
+	defaultPrefix = now.Format(FilePrefixFormat)
 }
 
 func main() {
@@ -74,8 +76,10 @@ func main() {
 	}
 
 	var startTime string
+	var prefix string
 	if *start == "" {
 		startTime = defaultStartTime
+		prefix = defaultPrefix
 	} else {
 		var err error
 		var s time.Time
@@ -87,19 +91,22 @@ func main() {
 				log.Fatalf("Error on parsing start time: %v", err)
 			}
 			year, month, day := now.Date()
-			startTime = time.Date(year, month, day, s.Hour(), s.Minute(), s.Second(), 0, loc).Format(AtCmdFormat)
+			t := time.Date(year, month, day, s.Hour(), s.Minute(), s.Second(), 0, loc)
+			startTime = t.Format(AtCmdFormat)
+			prefix = t.Format(FilePrefixFormat)
 		case 8:
 			s, err = time.Parse(DateHourMinFormat, *start)
 			if err != nil {
 				log.Fatalf("Error on parsing start time: %v", err)
 			}
 			startTime = s.Format(AtCmdFormat)
+			prefix = s.Format(FilePrefixFormat)
 		}
 	}
 	log.Printf("start time: %v", startTime)
 
 	duration := strconv.Itoa(*min * 60)
-	filename := now.Format(FilePrefixFormat) + "-" + *title + ".ts"
+	filename := prefix + "-" + *title + ".ts"
 	recpt1Str := []string{"recpt1", "--b25", "--strip", v, duration, filename}
 	recpt1Cmd := exec.Command("echo", recpt1Str...)
 	atCmd := exec.Command("at", "-t", startTime)
