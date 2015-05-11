@@ -14,14 +14,16 @@ import (
 )
 
 const (
-	FilePrefixFormat = "20060102T1504"
-	AtCmdFormat      = "01021504.05"
+	FilePrefixFormat  = "20060102T1504"
+	HourMinFormat     = "1504"
+	DateHourMinFormat = "01021504"
+	AtCmdFormat       = "01021504.05"
 )
 
 var (
 	tv    = flag.String("tv", "", "TV channel to record in remote control ID.")
 	min   = flag.Int("min", 60, "minites to record")
-	start = flag.String("start", "", "recording start time in format like XX:YY")
+	start = flag.String("start", "", "recording start time in format like HHMM or mmddHHMM")
 	title = flag.String("title", "test", "tv program title")
 )
 
@@ -46,9 +48,14 @@ var TVChannelMap = map[string]string{
 	"univ": "28",
 }
 
+var (
+	now              time.Time
+	defaultStartTime string
+)
+
 func init() {
-	now := time.Now().Add(10 * time.Second)
-	*start = now.Format(AtCmdFormat)
+	now = time.Now().Add(10 * time.Second)
+	defaultStartTime = now.Format(AtCmdFormat)
 }
 
 func main() {
@@ -58,11 +65,35 @@ func main() {
 	if v, ok = TVChannelMap[*tv]; !ok {
 		log.Fatalf("specified channel doesn't exist: %v", v)
 	}
+
+	var startTime string
+	if *start == "" {
+		startTime = defaultStartTime
+	} else {
+		var err error
+		var s time.Time
+		switch len(*start) {
+		case 4:
+			s, err = time.Parse(HourMinFormat, *start)
+		case 6:
+			s, err = time.Parse(DateHourMinFormat, *start)
+		}
+
+		if err != nil {
+			log.Fatalf("Error on parsing start time: %v", err)
+		}
+		year, month, day := now.Date()
+		log.Println(year, month, day)
+		loc, _ := time.LoadLocation("Asia/Tokyo")
+		startTime = time.Date(year, month, day, s.Hour(), s.Minute(), s.Second(), 0, loc).Format(AtCmdFormat)
+	}
+	log.Printf("start time: %v", startTime)
+
 	duration := strconv.Itoa(*min * 60)
-	filename := time.Now().Format(FilePrefixFormat) + "-" + *title + ".ts"
+	filename := now.Format(FilePrefixFormat) + "-" + *title + ".ts"
 	recpt1Str := []string{"recpt1", "--b25", "--strip", v, duration, filename}
 	recpt1Cmd := exec.Command("echo", recpt1Str...)
-	atCmd := exec.Command("at", "-t", *start)
+	atCmd := exec.Command("at", "-t", startTime)
 
 	r, w := io.Pipe()
 	recpt1Cmd.Stdout = w
@@ -77,10 +108,13 @@ func main() {
 	}
 	err = atCmd.Start()
 	if err != nil {
-		log.Fatalf("%v\n%v\n%v", stderr.String())
+		log.Fatalf("%v", stderr.String())
 	}
 	recpt1Cmd.Wait()
 	w.Close()
-	atCmd.Wait()
-	log.Printf("booked %v: %v", *start, stdout.String())
+	err = atCmd.Wait()
+	if err != nil {
+		log.Fatalf("%v", stderr.String())
+	}
+	log.Printf("booked %v -> %v", startTime, stdout.String())
 }
