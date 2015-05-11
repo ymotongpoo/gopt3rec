@@ -72,20 +72,22 @@ func main() {
 	} else {
 		var err error
 		var s time.Time
+		loc, _ := time.LoadLocation("Asia/Tokyo")
 		switch len(*start) {
 		case 4:
 			s, err = time.Parse(HourMinFormat, *start)
-		case 6:
+			if err != nil {
+				log.Fatalf("Error on parsing start time: %v", err)
+			}
+			year, month, day := now.Date()
+			startTime = time.Date(year, month, day, s.Hour(), s.Minute(), s.Second(), 0, loc).Format(AtCmdFormat)
+		case 8:
 			s, err = time.Parse(DateHourMinFormat, *start)
+			if err != nil {
+				log.Fatalf("Error on parsing start time: %v", err)
+			}
+			startTime = s.Format(AtCmdFormat)
 		}
-
-		if err != nil {
-			log.Fatalf("Error on parsing start time: %v", err)
-		}
-		year, month, day := now.Date()
-		log.Println(year, month, day)
-		loc, _ := time.LoadLocation("Asia/Tokyo")
-		startTime = time.Date(year, month, day, s.Hour(), s.Minute(), s.Second(), 0, loc).Format(AtCmdFormat)
 	}
 	log.Printf("start time: %v", startTime)
 
