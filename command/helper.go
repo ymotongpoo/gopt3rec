@@ -6,7 +6,7 @@ import (
 	_ "fmt"
 	"io"
 	"log"
-	_ "os"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -18,13 +18,6 @@ const (
 	HourMinFormat     = "1504"
 	DateHourMinFormat = "01021504"
 	AtCmdFormat       = "01021504.05"
-)
-
-var (
-	tv    = flag.String("tv", "", "TV channel to record in remote control ID.")
-	min   = flag.Int("min", 60, "minites to record")
-	start = flag.String("start", "", "recording start time in format like HHMM or mmddHHMM")
-	title = flag.String("title", "test", "tv program title")
 )
 
 var TVChannelMap = map[string]string{
@@ -67,46 +60,46 @@ func init() {
 	defaultPrefix = now.Format(FilePrefixFormat)
 }
 
-func main() {
-	flag.Parse()
-	var v string
-	var ok bool
-	if v, ok = TVChannelMap[*tv]; !ok {
-		log.Fatalf("specified channel doesn't exist: %v", v)
+func parseBookSchedule(start string) (string, string, error) {
+	if start == "" {
+		return defaultStartTime, defaultPrefix, nil
 	}
 
-	var startTime string
-	var prefix string
-	if *start == "" {
-		startTime = defaultStartTime
-		prefix = defaultPrefix
-	} else {
-		var err error
-		var s time.Time
-		loc, _ := time.LoadLocation("Asia/Tokyo")
-		switch len(*start) {
-		case 4:
-			s, err = time.Parse(HourMinFormat, *start)
-			if err != nil {
-				log.Fatalf("Error on parsing start time: %v", err)
-			}
-			year, month, day := now.Date()
-			t := time.Date(year, month, day, s.Hour(), s.Minute(), s.Second(), 0, loc)
-			startTime = t.Format(AtCmdFormat)
-			prefix = t.Format(FilePrefixFormat)
-		case 8:
-			s, err = time.Parse(DateHourMinFormat, *start)
-			if err != nil {
-				log.Fatalf("Error on parsing start time: %v", err)
-			}
-			startTime = s.Format(AtCmdFormat)
-			prefix = s.Format(FilePrefixFormat)
-		}
+	loc, _ := time.LoadLocation("Asia/Tokyo")
+	year, month, day := now.Date()
+	var err error
+	var s time.Time
+	switch len(start) {
+	case 4:
+		s, err = time.Parse(HourMinFormat, start)
+	case 8:
+		s, err = time.Parse(DateHourMinFormat, start)
+	}
+	if err != nil {
+		return "", "", err
+	}
+	t := time.Date(year, month, day, s.Hour(), s.Minute(), s.Second(), 0, loc)
+	startTime := t.Format(AtCmdFormat)
+	prefix := t.Format(FilePrefixFormat)
+	return startTime, prefix, nil
+}
+
+// Book is helper command of recpt1. This accepts user friendly arguments to set recpt1 schedule with at command.
+func Book(tv, start, title string, min int) {
+	var v string
+	var ok bool
+	if v, ok = TVChannelMap[tv]; !ok {
+		log.Fatalf("specified channel doesn't exist: %v", tv)
+	}
+
+	startTime, prefix, err := parseBookSchedule(start)
+	if err != nil {
+		log.Fatalf("Error on parsing start time: %v", err)
 	}
 	log.Printf("start time: %v", startTime)
 
-	duration := strconv.Itoa(*min * 60)
-	filename := prefix + "-" + *title + ".ts"
+	duration := strconv.Itoa(min * 60)
+	filename := prefix + "-" + title + ".ts"
 	recpt1Str := []string{"recpt1", "--b25", "--strip", v, duration, filename}
 	recpt1Cmd := exec.Command("echo", recpt1Str...)
 	atCmd := exec.Command("at", "-t", startTime)
@@ -118,7 +111,7 @@ func main() {
 	var stdout, stderr bytes.Buffer
 	atCmd.Stdout = &stdout
 	atCmd.Stderr = &stderr
-	err := recpt1Cmd.Start()
+	err = recpt1Cmd.Start()
 	if err != nil {
 		log.Fatalf("%v\n%v\n%v", err, strings.Join(recpt1Str, " "), stderr.String())
 	}
@@ -132,5 +125,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("%v", stderr.String())
 	}
-	log.Printf("booked %v -> %v", startTime, stdout.String())
+	log.Printf("booked %v (%v)", startTime, strings.Join(recpt1Str, " "))
+	log.Printf("stdout: %v, stderr: %v", stdout.String(), stderr.String())
+}
+
+func main() {
+	bookFlags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	var (
+		tv    = bookFlags.String("tv", "", "TV channel to record in remote control ID.")
+		min   = bookFlags.Int("min", 60, "minites to record")
+		start = bookFlags.String("start", "", "recording start time in format like HHMM or mmddHHMM")
+		title = bookFlags.String("title", "test", "tv program title")
+	)
+
+	sub := os.Args[1]
+	switch sub {
+	case "book":
+		bookFlags.Parse(os.Args[2:])
+		log.Printf("book: %v %v %v", *tv, *start, *title, *min)
+		Book(*tv, *start, *title, *min)
+	}
 }
