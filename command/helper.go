@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"flag"
-	_ "fmt"
 	"io"
 	"log"
 	"os"
@@ -11,13 +11,17 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/ymotongpoo/gopt3rec/epg"
 )
 
 const (
-	FilePrefixFormat  = "20060102T1504"
-	HourMinFormat     = "1504"
-	DateHourMinFormat = "01021504"
-	AtCmdFormat       = "01021504.05"
+	FilePrefixFormat   = "20060102T1504"
+	HourMinFormat      = "1504"
+	DateHourMinFormat  = "01021504"
+	AtCmdFormat        = "01021504.05"
+	EPGInsertStatement = `replace into epg(id, channel, title, detail, start, end, duration) values (?, ?, ?, ?, ?, ?, ?)`
 )
 
 var TVChannelMap = map[string]string{
@@ -129,6 +133,48 @@ func Book(tv, start, title string, min int) {
 	log.Printf("stdout: %v, stderr: %v", stdout.String(), stderr.String())
 }
 
+// EPGDump inserts egpdata into existing SQLite3 database table.
+func EPGDump(epgjson string) {
+	file, err := os.Open(epgjson)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	data, err := epg.New(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := sql.Open("sqlite3", "epg.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	for _, d := range data {
+		tx, err := db.Begin()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		statement, err := tx.Prepare(EPGInsertStatement)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		defer statement.Close()
+		for _, p := range d.Programs {
+			_, err := statement.Exec(p.EventID, p.Channel, p.Title, p.Detail, p.Start, p.End, p.Duration)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+		}
+		tx.Commit()
+	}
+}
+
 func main() {
 	bookFlags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	var (
@@ -138,11 +184,20 @@ func main() {
 		title = bookFlags.String("title", "test", "tv program title")
 	)
 
+	epgdumpFlags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	var (
+		epgjson = epgdumpFlags.String("json", "", "")
+	)
+
 	sub := os.Args[1]
 	switch sub {
 	case "book":
 		bookFlags.Parse(os.Args[2:])
 		log.Printf("book: %v %v %v", *tv, *start, *title, *min)
 		Book(*tv, *start, *title, *min)
+	case "epgdump":
+		epgdumpFlags.Parse(os.Args[2:])
+		log.Printf("epgdump: %v", *epgjson)
+		EPGDump(*epgjson)
 	}
 }
