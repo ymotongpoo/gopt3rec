@@ -70,17 +70,26 @@ func parseBookSchedule(start string) (string, string, error) {
 	}
 
 	loc, _ := time.LoadLocation("Asia/Tokyo")
-	year, month, day := now.Date()
+
 	var err error
 	var s time.Time
+	var year, day int
+	var month time.Month
 	switch len(start) {
 	case 4:
 		s, err = time.Parse(HourMinFormat, start)
+		if err != nil {
+			return "", "", err
+		}
+		year, month, day = now.Date()
 	case 8:
 		s, err = time.Parse(DateHourMinFormat, start)
-	}
-	if err != nil {
-		return "", "", err
+		if err != nil {
+			return "", "", err
+		}
+		year = now.Year()
+		month = s.Month()
+		day = s.Day()
 	}
 	t := time.Date(year, month, day, s.Hour(), s.Minute(), s.Second(), 0, loc)
 	startTime := t.Format(AtCmdFormat)
@@ -193,7 +202,7 @@ func main() {
 	switch sub {
 	case "book":
 		bookFlags.Parse(os.Args[2:])
-		log.Printf("book: %v %v %v", *tv, *start, *title, *min)
+		log.Printf("book: %v %v %v %v", *tv, *start, *title, *min)
 		Book(*tv, *start, *title, *min)
 	case "epgdump":
 		epgdumpFlags.Parse(os.Args[2:])
