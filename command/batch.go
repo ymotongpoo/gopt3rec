@@ -18,7 +18,7 @@ func BatchRec(path string) {
 		for _, v := range TVChannelMap {
 			tsfile := filepath.Join(path, v+".ts")
 			cmdStr := []string{"recpt1", "--b25", "--strip", v, "180", tsfile}
-			cmd := exec.Command(cmdStr[0], cmdStr[1:])
+			cmd := exec.Command(cmdStr[0], cmdStr[1:]...)
 			err = cmd.Run()
 			if err != nil {
 				log.Println("failed to record: %v", v)
@@ -26,12 +26,12 @@ func BatchRec(path string) {
 			}
 			fileCh <- tsfile
 		}
-		fileCh.Close()
+		close(fileCh)
 	}()
 
 	for tsfile := range fileCh {
-		cmdStr := []string("epgdump", "json", tsfile, tsfile+".json")
-		cmd := exec.Command(cmdStr[0], cmdStr[1:])
+		cmdStr := []string{"epgdump", "json", tsfile, tsfile + ".json"}
+		cmd := exec.Command(cmdStr[0], cmdStr[1:]...)
 		err = cmd.Run()
 	}
 }
