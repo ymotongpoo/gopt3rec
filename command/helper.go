@@ -185,6 +185,7 @@ func EPGDump(epgjson string) {
 }
 
 func main() {
+	// options for wrapper command of recpt1
 	bookFlags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	var (
 		tv    = bookFlags.String("tv", "", "TV channel to record in remote control ID.")
@@ -193,6 +194,7 @@ func main() {
 		title = bookFlags.String("title", "test", "tv program title")
 	)
 
+	// options for wrapper command for epgdump
 	epgdumpFlags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	var (
 		epgjson = epgdumpFlags.String("json", "", "")
@@ -208,5 +210,17 @@ func main() {
 		epgdumpFlags.Parse(os.Args[2:])
 		log.Printf("epgdump: %v", *epgjson)
 		EPGDump(*epgjson)
+	case "batchrec":
+		log.Println("batchrec")
+		var path string
+		switch {
+		case len(os.Args) > 3:
+			path = os.Args[2]
+		case os.Getenv("EPGDUMP_HOME") != "":
+			path = os.Getenv("EPGDUMP_HOME")
+		default:
+			path = "epgdump"
+		}
+		BatchRec(path)
 	}
 }
