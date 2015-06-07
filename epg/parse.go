@@ -15,6 +15,7 @@ package epg
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"time"
 )
@@ -43,7 +44,7 @@ type Program struct {
 	Video      Video         `json:"video"`
 	Duration   time.Duration `json:"duration"`
 	Audio      []Audio       `json:"audio"`
-	ExtDetail  []string      `json:"extdetail"` // TODO(ymotongpoo): confirm contents
+	ExtDetails []ExtDetail   `json:"extdetail"`
 }
 
 type Category struct {
@@ -67,12 +68,17 @@ type Audio struct {
 	ExtDesc  string `json:"extdesc"`
 }
 
+type ExtDetail struct {
+	ItemDescription string `json:"item_description"`
+	Item            string `json:"item"`
+}
+
 func New(r io.Reader) ([]EPGData, error) {
 	decoder := json.NewDecoder(r)
 	data := []EPGData{}
 	err := decoder.Decode(&data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("epg.New: %v", err)
 	}
 
 	for i := range data {
