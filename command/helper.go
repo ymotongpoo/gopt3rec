@@ -1,3 +1,16 @@
+// Copyright 2015 Yoshi Yamaguchi
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// 	You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// 	See the License for the specific language governing permissions and
+// limitations under the License.
 package main
 
 import (
@@ -142,37 +155,31 @@ func Book(tv, start, title string, min int) {
 	log.Printf("stdout: %v, stderr: %v", stdout.String(), stderr.String())
 }
 
-// EPGDump inserts egpdata into existing SQLite3 database table.
-func EPGDump(epgjson string) {
+// EPGStore inserts egpdata into existing SQLite3 database table.
+func epgStore(db *sql.DB, epgjson string) error {
 	file, err := os.Open(epgjson)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer file.Close()
 
 	data, err := epg.New(file)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-
-	db, err := sql.Open("sqlite3", "epg.db")
+	tx, err := db.Begin()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
-	defer db.Close()
+	statement, err := tx.Prepare(EPGInsertStatement)
+	if err != nil {
+		log.Println(err)
+	}
+	defer statement.Close()
 
+	log.Printf("start: %v", epgjson)
 	for _, d := range data {
-		tx, err := db.Begin()
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		statement, err := tx.Prepare(EPGInsertStatement)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		defer statement.Close()
+		log.Printf("file: %v, %v programs", epgjson, len(d.Programs))
 		for _, p := range d.Programs {
 			_, err := statement.Exec(p.EventID, p.Channel, p.Title, p.Detail, p.Start, p.End, p.Duration)
 			if err != nil {
@@ -180,7 +187,24 @@ func EPGDump(epgjson string) {
 				continue
 			}
 		}
-		tx.Commit()
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+	}
+	return nil
+}
+
+func EPGStore(epgjson string) {
+	db, err := sql.Open("sqlite3", "epg.db")
+	if err != nil {
+		log.Fatalf("EPGStore: %v", err)
+	}
+	defer db.Close()
+
+	err = epgStore(db, epgjson)
+	if err != nil {
+		log.Fatalf("EPGStore: %v", err)
 	}
 }
 
@@ -206,11 +230,11 @@ func main() {
 		bookFlags.Parse(os.Args[2:])
 		log.Printf("book: %v %v %v %v", *tv, *start, *title, *min)
 		Book(*tv, *start, *title, *min)
-	case "epgdump":
+	case "epgstore":
 		epgdumpFlags.Parse(os.Args[2:])
-		log.Printf("epgdump: %v", *epgjson)
-		EPGDump(*epgjson)
-	case "batchrec":
+		log.Printf("epgstore: %v", *epgjson)
+		EPGStore(*epgjson)
+	case "batchdump":
 		log.Println("batchrec")
 		var path string
 		switch {
@@ -221,6 +245,6 @@ func main() {
 		default:
 			path = "epgdump"
 		}
-		BatchRec(path)
+		BatchDump(path)
 	}
 }
