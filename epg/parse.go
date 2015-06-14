@@ -30,21 +30,21 @@ type EPGData struct {
 }
 
 type Program struct {
-	EventID    int    `json:"event_id"`
-	Channel    string `json:"channel"`
-	Title      string `json:"title"`
-	Detail     string `json:"detail"`
-	StartUnix  int64  `json:"start"`
-	EndUnix    int64  `json:"end"`
-	Start      time.Time
-	End        time.Time
-	Category   []Category    `json:"category"`
-	AttachInfo []interface{} `json:"attachinfo"` // TODO(ymotongpoo): confirm contents
-	FreeCA     bool          `json:"freeCA"`
-	Video      Video         `json:"video"`
-	Duration   time.Duration `json:"duration"`
-	Audio      []Audio       `json:"audio"`
-	ExtDetails []ExtDetail   `json:"extdetail"`
+	EventID    int           `json:"event_id"`
+	Channel    string        `json:"channel"`
+	Title      string        `json:"title"`
+	Detail     string        `json:"detail"`
+	StartUnix  int64         `json:"start,omitempty"`
+	EndUnix    int64         `json:"end,omitempty"`
+	Start      time.Time     `json:"starttime"`
+	End        time.Time     `json:"endtime"`
+	Category   []Category    `json:"category,omitempty"`
+	AttachInfo []interface{} `json:"attachinfo,omitempty"` // TODO(ymotongpoo): confirm contents
+	FreeCA     bool          `json:"freeCA,omitempty"`
+	Video      Video         `json:"video,omitempty"`
+	Duration   time.Duration `json:"duration,omitempty"`
+	Audio      []Audio       `json:"audio,omitempty"`
+	ExtDetails []ExtDetail   `json:"extdetail,omitempty"`
 }
 
 type Category struct {
