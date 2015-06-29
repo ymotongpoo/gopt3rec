@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	EPGSelectStatement  = `select id, channel, title, detail, start, end, duration from epg where start >= ? and end < ?`
+	EPGSelectStatement  = `select id, channel, title, detail, start, end, duration from epg where start >= ? and end < ? limit 100`
 	SelectDefaultWindow = 2 * 24 * time.Hour // 1 week
 	ResultBufSize       = 100
 )
@@ -45,8 +45,10 @@ func init() {
 
 func main() {
 	defer db.Close()
-	http.HandleFunc("/epg/v1/list", epgListHandler)
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/epg/v1/list", epgListHandler)
+	mux.Handle("/", http.FileServer(http.Dir("./static")))
+	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
 	}
 }

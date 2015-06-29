@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="./bower_components/webcomponentsjs/webcomponents.js"></script>
+    <script>
+     window.Polymer.dom = "shadow";
+    </script>
+    <link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+    <link rel="import" href="./elements/epg-color.html">
+    <link rel="import" href="./elements/epg-top.html">
+    <title>EPG booking</title>
+    <style is="custom-style">
+     paper-toolbar {
+       color: var(--primary-text-color);
+       --paper-toolbar-background: var(--primary-background-color);
+     }
+    </style>
+  </head>
+  <body class="fullbleed relative">
+    <paper-header-panel class="flex">
+      <paper-toolbar class="tall">
+        <div class="title">EPG booking system</div>
+      </paper-toolbar>
+      <epg-top></epg-top>
+    </paper-header-panel>
+  </body>
+</html>

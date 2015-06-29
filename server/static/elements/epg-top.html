@@ -1,0 +1,66 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animations.html">
+<link rel="import" href="./epg-schedule.html">
+<link rel="import" href="./epg-detail.html">
+<dom-module id="epg-top">
+  <style>
+   :host {
+     display: block;
+   }
+  </style>
+  <template>
+    <iron-ajax auto
+               url="/epg/v1/list"
+               handle-as="json"
+               on-response="_handleResponse"
+               debouce-duration="300"></iron-ajax>
+    <neon-animated-pages id="pages" selected="0">
+      <epg-schedule data="[[epgData]]" on-item-click="_onItemClick"></epg-schedule>
+      <epg-detail id="detail" on-close="_onClose"></epg-detail>
+    </neon-animated-pages>
+  </template>
+  <script>
+   Polymer({
+     is: 'epg-top',
+
+     listeners: {
+       'item-click': '_selectedItem',
+       'close': "_onClose"
+     },
+
+     properties: {
+       epgData: {
+         type: Array,
+         value: function() {
+           return [];
+         }
+       }
+     },
+
+     _handleResponse: function(req) {
+       var data = [];
+       req.detail.response.forEach(function(elem, i, obj) {
+         data.push({
+           id: elem.event_id,
+           channel: elem.channel,
+           title: elem.title,
+           schedule: elem.starttime + " (" + elem.duration/60 + "min.)",
+           detail: elem.detail
+         });
+       });
+       this.epgData = data;
+     },
+     _selectedItem: function(event) {
+       this.$.detail.video = event.detail.item;
+     },
+     _onItemClick: function() {
+       this.$.pages.selected = 1;
+     },
+     _onClose: function() {
+       this.$.pages.selected = 0;
+     }
+   });
+  </script>
+</dom-module>

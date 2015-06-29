@@ -1,0 +1,92 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="./epg-color.html">
+
+<dom-module id="epg-schedule">
+  <style>
+   :host {
+     color: var(--primary-text-color);
+   }
+   div.title {
+     color: var(--primary-text-color);
+   }
+   div[secondary] {
+     color: var(--secondary-text-color);
+   }
+  </style>
+  <template>
+    <div id="program">
+      <template is="dom-repeat" items=[[data]]>
+        <paper-item on-click="_itemClicked">
+          <paper-item-body two-line>
+            <div class="title"><span>[[item.title]]</span></div>
+            <div secondary><span>[[item.schedule]]</span></div>
+          </paper-item-body>
+        </paper-item>
+      </template>
+    </div>
+  </template>
+  <script>
+   Polymer({
+     is: 'epg-schedule',
+     
+     behaviors: [
+       Polymer.NeonAnimatableBehavior
+     ],
+
+     listeners: {
+       //'click': '_onClick'
+     },
+
+     properties: {
+       
+       data: {
+         type: Array,
+         value: function() {
+           return [];
+         }
+       },
+
+       animationConfig: {
+         type: Object,
+         value: function() {
+           return {
+             'exit': [{
+               name: 'hero-animation',
+               id: 'program',
+               fromPage: this
+             }]
+           }
+         }
+       },
+     },
+
+     /*
+     _onClick: function(event) {
+       var target = event.target;
+       while (target !== this && !target._templateInstance) {
+         target = target.parentNode;
+       }
+       this.sharedElements = {
+         'program': target
+       };
+     },
+     */
+
+     _itemClicked: function(event) {
+       var video = event.model.item;
+       this.fire('item-click', {
+         'item': video
+       });
+
+       this.sharedElements = {
+         'program': this.$.program
+       };
+
+     }
+   });
+  </script>
+</dom-module>
