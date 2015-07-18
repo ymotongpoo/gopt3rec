@@ -4,6 +4,9 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
 <link rel="import" href="../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="epg-color.html">
 <dom-module id="epg-detail">
   <style>
    :host {
@@ -11,8 +14,12 @@
    }
 
    #program {
-     position: relative;
-     margin: 200px 100px 0;
+     position: fixed;
+     margin: auto;
+     top: 0;
+     bottom: 0;
+     left: 0;
+     right: 0;
      height: 700px;
      max-width: 75%;
      max-height: 60%;
@@ -30,14 +37,31 @@
      width: 100vw;
    }
 
+   .title {
+     color: var(--primary-text-color);
+   }
+
+   .channel {
+     color: var(--secondary-text-color);
+   }
+
+   .detail {
+     color: var(--primary-text-color);
+   }
+
+   .cancel {
+     position: absolute;
+     right: 0;
+     top: 0;
+   }
   </style>
   <template>
     <div id="fixed"></div>
     <paper-material id="program">
-      <div class="channel">[[video.channel]]</div>
-      <div class="primary"><span>[[video.title]]</span> <span>[[video.schedule]]</span></div>
+      <iron-icon class="cancel" icon="cancel" on-tap="_cancelTapped"></iron-icon>
+      <h2 class="title"><span>[[video.title]]</span></h2>
+      <h3 class="channel"><span>[[video.channel]]</span> <span>[[video.schedule]]</span></h3>
       <div class="detail">[[video.detail]]</div>
-      <paper-button raised on-tap="_okTapped">OK</paper-button>
     </paper-material>
   </template>
   <script>
@@ -101,7 +125,7 @@
        }
      },
 
-     _okTapped: function() {
+     _cancelTapped: function() {
        this.fire('close');
      }
    });
