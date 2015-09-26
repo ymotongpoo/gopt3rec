@@ -125,6 +125,7 @@ func Book(tv, start, title string, min int) {
 	log.Printf("start time: %v", startTime)
 
 	duration := strconv.Itoa(min * 60)
+	title = strings.TrimSpace(title)
 	filename := prefix + "-" + title + ".ts"
 	recpt1Str := []string{"recpt1", "--b25", "--strip", v, duration, filename}
 	recpt1Cmd := exec.Command("echo", recpt1Str...)
