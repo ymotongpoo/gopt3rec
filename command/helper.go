@@ -71,12 +71,14 @@ var (
 	defaultPrefix    string
 )
 
+// init sets default values of each variables which depends on execution time.
 func init() {
 	now = time.Now().Add(10 * time.Second)
 	defaultStartTime = now.Format(AtCmdFormat)
 	defaultPrefix = now.Format(FilePrefixFormat)
 }
 
+// parseBookSchedule converts specified time string to time.Time.
 func parseBookSchedule(start string) (string, string, error) {
 	if start == "" {
 		return defaultStartTime, defaultPrefix, nil
