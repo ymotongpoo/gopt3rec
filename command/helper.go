@@ -65,6 +65,16 @@ var TVChannelMap = map[string]string{
 	"bsfuji": "BS13_1",
 }
 
+var replaceChars = map[string]string{
+	"!": "！",
+	"?": "？",
+	"#": "＃",
+	"(": "（",
+	")": "）",
+	" ": "_",
+	"*": "＊",
+}
+
 var (
 	now              time.Time
 	defaultStartTime string
@@ -112,6 +122,14 @@ func parseBookSchedule(start string) (string, string, error) {
 	return startTime, prefix, nil
 }
 
+// normalize replaces special characters in shell script to corresponding multi-byte characters.
+func normalize(orig string) string {
+	for k, v := range replaceChars {
+		orig = strings.Replace(orig, k, v, -1)
+	}
+	return orig
+}
+
 // Book is helper command of recpt1. This accepts user friendly arguments to set recpt1 schedule with at command.
 func Book(tv, start, title string, min int) {
 	var v string
@@ -127,7 +145,9 @@ func Book(tv, start, title string, min int) {
 	log.Printf("start time: %v", startTime)
 
 	duration := strconv.Itoa(min * 60)
+
 	title = strings.TrimSpace(title)
+	title = normalize(title)
 	filename := prefix + "-" + title + ".ts"
 	recpt1Str := []string{"recpt1", "--b25", "--strip", v, duration, filename}
 	recpt1Cmd := exec.Command("echo", recpt1Str...)
