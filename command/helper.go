@@ -126,6 +126,7 @@ func parseBookSchedule(start string) (string, string, error) {
 func normalize(orig string) string {
 	for k, v := range replaceChars {
 		orig = strings.Replace(orig, k, v, -1)
+		log.Println(orig)
 	}
 	return orig
 }
@@ -149,7 +150,7 @@ func Book(tv, start, title string, min int) {
 	title = strings.TrimSpace(title)
 	title = normalize(title)
 	filename := prefix + "-" + title + ".ts"
-	recpt1Str := []string{"recpt1", "--b25", "--strip", v, duration, filename}
+	recpt1Str := []string{"recpt1", "--b25", "--sid", "hd", "--strip", v, duration, filename}
 	recpt1Cmd := exec.Command("echo", recpt1Str...)
 	atCmd := exec.Command("at", "-t", startTime)
 
