@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	baseURL  = "http://tv.so-net.ne.jp/"
-	chartURL = baseURL + "chart/23.action"
+	baseURL = "http://tv.so-net.ne.jp/"
+	tvURL   = baseURL + "chart/23.action"
+	bsURL   = baseURL + "chart/bs1.action"
 )
 
 var (
@@ -27,6 +28,7 @@ var (
 	textPath = xmlpath.MustCompile(`./text()`)
 
 	// schedule handling
+	dateLayout      = "200601021504"
 	durationPattern = regexp.MustCompile(`\d+`)
 )
 
@@ -77,7 +79,7 @@ func NewProgram(uri string) (*Program, error) {
 		return nil, err
 	}
 
-	date, err := time.Parse("200601021504", startd)
+	date, err := time.Parse(dateLayout, startd)
 	if err != nil {
 		return nil, err
 	}
@@ -91,29 +93,38 @@ func NewProgram(uri string) (*Program, error) {
 }
 
 func main() {
-	resp, err := http.Get(chartURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-	root, err := xmlpath.ParseHTML(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	schedules := schedulePath.Iter(root)
+	chartURLs := make(chan string)
+	go func() {
+		// TODO: generate list of chart URLs and store it to channel.
+	}()
+	programURLs := RenderChart(chartURLs)
+	ProgramInfo(programURLs)
+}
 
+func RenderChart(links <-chan string) chan string {
 	programURLs := make(chan string, 100)
 	go func() {
-		for schedules.Next() {
-			n := schedules.Node()
-			link := linkPath.Iter(n)
-			link.Next()
-			programURLs <- link.Node().String()
+		for l := range links {
+			resp, err := http.Get(l)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer resp.Body.Close()
+			root, err := xmlpath.ParseHTML(resp.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			schedules := schedulePath.Iter(root)
+			for schedules.Next() {
+				n := schedules.Node()
+				link := linkPath.Iter(n)
+				link.Next()
+				programURLs <- link.Node().String()
+			}
 		}
 		close(programURLs)
 	}()
-	time.Sleep(3 * time.Second)
-	ProgramInfo(programURLs)
+	return programURLs
 }
 
 func ProgramInfo(links <-chan string) {
