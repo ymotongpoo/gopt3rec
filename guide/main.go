@@ -32,8 +32,9 @@ var (
 	// schedule handling
 	dateLayout      = "200601021504"
 	durationPattern = regexp.MustCompile(`\d+`)
-	interval        = 3 * time.Second
+	interval        = 3500 * time.Millisecond
 	maxOffsetIndex  = 33
+	maxFeedItems    = 200
 	idSet           = make(map[string]bool)
 )
 
@@ -50,6 +51,7 @@ type Program struct {
 
 // NewProgram is a constructor of Program. uri should be URL of the tv program page.
 func NewProgram(uri string) (*Program, error) {
+	log.Println("[NewProgram]", uri)
 	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
@@ -121,6 +123,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer file.Close()
 	err = feed.WriteAtom(file)
 	if err != nil {
 		log.Fatal(err)
@@ -132,14 +135,15 @@ func RenderChart(links <-chan string) chan string {
 	go func() {
 		for l := range links {
 			time.Sleep(interval)
+			log.Println("[RenderChart]", l)
 			resp, err := http.Get(l)
 			if err != nil {
-				log.Fatal(err)
+				log.Println("[RenderChart]", err)
 			}
 			defer resp.Body.Close()
 			root, err := xmlpath.ParseHTML(resp.Body)
 			if err != nil {
-				log.Fatal(err)
+				log.Println("[RenderChart]", err)
 			}
 			schedules := schedulePath.Iter(root)
 			for schedules.Next() {
@@ -154,7 +158,7 @@ func RenderChart(links <-chan string) chan string {
 	return programURLs
 }
 
-func ProgramInfo(links <-chan string) chan *Program {
+func ProgramInfo(links chan string) chan *Program {
 	programs := make(chan *Program, 100)
 	go func() {
 		for l := range links {
@@ -168,11 +172,10 @@ func ProgramInfo(links <-chan string) chan *Program {
 			time.Sleep(interval)
 			p, err := NewProgram(uri)
 			if err != nil {
-				log.Println(err)
+				log.Println("[ProgramInfo]", err)
 				continue
 			}
 			programs <- p
-			time.Sleep(2 * time.Second)
 		}
 		close(programs)
 	}()
@@ -187,7 +190,7 @@ func generateFeed(programs <-chan *Program) *feeds.Feed {
 		Author:      &feeds.Author{"Anonymous", "john.doe@example.com"},
 	}
 	i := 0
-	items := make([]*feeds.Item, 10000)
+	items := make([]*feeds.Item, maxFeedItems)
 	for p := range programs {
 		items[i] = &feeds.Item{
 			Title:       p.Title,
@@ -197,9 +200,10 @@ func generateFeed(programs <-chan *Program) *feeds.Feed {
 			Created:     p.StartTime,
 		}
 		i++
-		if i > 10000 {
+		if i >= maxFeedItems {
 			break
 		}
 	}
+	feed.Items = items
 	return feed
 }
