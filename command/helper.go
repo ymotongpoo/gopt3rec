@@ -34,7 +34,7 @@ const (
 	FilePrefixFormat   = "20060102T1504"
 	HourMinFormat      = "1504"
 	DateHourMinFormat  = "01021504"
-	AtCmdFormat        = "01021504.05"
+	AtCmdFormat        = "0601021504.05"
 	EPGInsertStatement = `replace into epg(id, channel, title, detail, start, end, duration) values (?, ?, ?, ?, ?, ?, ?)`
 )
 
