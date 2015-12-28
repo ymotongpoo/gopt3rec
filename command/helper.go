@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // 	See the License for the specific language governing permissions and
 // limitations under the License.
+
 package main
 
 import (
@@ -113,7 +114,11 @@ func parseBookSchedule(start string) (string, string, error) {
 		if err != nil {
 			return "", "", err
 		}
-		year = now.Year()
+		if s.Month() < now.Month() {
+			year = now.Year() + 1
+		} else {
+			year = now.Year()
+		}
 		month = s.Month()
 		day = s.Day()
 	}
