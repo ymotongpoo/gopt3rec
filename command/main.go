@@ -62,7 +62,7 @@ var TVChannelMap = map[string]string{
 	"bsntv":   "BS13_0",
 	"bsex":    "BS01_0",
 	"bstbs":   "BS01_1",
-	"bsjapan": "BS03_1",
+	"bsjapan": "BS01_2",
 	"bsfuji":  "BS13_1",
 }
 
