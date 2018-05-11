@@ -57,7 +57,7 @@ var TVChannelMap = map[string]string{
 	"mx":      "16",
 	"12":      "28",
 	"univ":    "28",
-	"nhkbs1":  "BS15_1",
+	"nhkbs1":  "BS15_0",
 	"nhkbs2":  "BS03_1",
 	"bsntv":   "BS13_0",
 	"bsex":    "BS01_0",
